@@ -4,13 +4,16 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   Res,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
-import { AuthDto } from "./dto/auth.dto";
+import { AuthDto } from "./dto";
 import { AuthResponse } from "./types";
-import { Response } from "express";
+import { Request, Response } from "express";
 import { TOKENS } from "src/enums/tokens.enum";
+import { User } from "@prisma/client";
+import { REFRESH_TOKEN_EXPIRATION_MS } from "src/constants";
 
 @Controller("auth")
 export class AuthController {
@@ -22,15 +25,15 @@ export class AuthController {
     @Body() authDto: AuthDto,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const { accessToken, refreshToken, user } =
+    const { accessToken, refreshToken, userDto } =
       await this.authService.login(authDto);
 
     response.cookie(TOKENS.REFRESH_TOKEN, refreshToken, {
       httpOnly: true,
-      maxAge: 1000 * 60,
+      maxAge: REFRESH_TOKEN_EXPIRATION_MS,
     });
 
-    return { user, accessToken };
+    return { user: userDto, accessToken };
   }
 
   @Post("signup")
@@ -39,25 +42,40 @@ export class AuthController {
     @Body() authDto: AuthDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthResponse> {
-    const { accessToken, refreshToken, user } =
+    const { accessToken, refreshToken, userDto } =
       await this.authService.signup(authDto);
 
     response.cookie(TOKENS.REFRESH_TOKEN, refreshToken, {
       httpOnly: true,
-      maxAge: 1000 * 60,
+      maxAge: REFRESH_TOKEN_EXPIRATION_MS,
     });
 
-    return { user, accessToken };
+    return { user: userDto, accessToken };
   }
 
   @Post("logout")
   @HttpCode(HttpStatus.OK)
   async logout(@Res({ passthrough: true }) response: Response) {
-    // mb should set options given to response.cookie()
     response.clearCookie(TOKENS.REFRESH_TOKEN);
   }
 
+  // here will be refresh guard
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
-  async refresh() {}
+  async refresh(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const user = request.user;
+
+    const { accessToken, refreshToken, userDto } =
+      await this.authService.refresh(user as User);
+
+    response.cookie(TOKENS.REFRESH_TOKEN, refreshToken, {
+      httpOnly: true,
+      maxAge: REFRESH_TOKEN_EXPIRATION_MS,
+    });
+
+    return { user: userDto, accessToken };
+  }
 }
