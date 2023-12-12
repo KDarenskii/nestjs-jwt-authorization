@@ -1,4 +1,4 @@
-import { UserDto } from "src/users/dto/user.dto";
+import { UserDto } from "src/common/dto/user.dto";
 
 export interface AuthResponse {
   accessToken: string;
@@ -6,7 +6,7 @@ export interface AuthResponse {
 }
 
 export interface UserTokens {
-  user: UserDto;
+  userDto: UserDto;
   accessToken: string;
   refreshToken: string;
 }
