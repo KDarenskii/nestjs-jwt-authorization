@@ -3,11 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { AuthDto } from "./dto/auth.dto";
+import { AuthDto } from "./dto";
 import { UsersService } from "src/users/users.service";
 import { JwtService } from "@nestjs/jwt";
 import { JwtPayload, UserTokens } from "./types";
 import * as bcrypt from "bcrypt";
+import { User } from "@prisma/client";
+import {
+  ACCESS_TOKEN_EXPIRATION_SEC,
+  REFRESH_TOKEN_EXPIRATION_SEC,
+} from "src/constants";
+import { UserDto } from "src/common";
 
 @Injectable()
 export class AuthService {
@@ -39,10 +45,9 @@ export class AuthService {
     const { accessToken, refreshToken } =
       await this.generateTokens(tokensPayload);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userData } = user;
+    const userDto = this.extractUserDto(user);
 
-    return { user: userData, accessToken, refreshToken };
+    return { userDto, accessToken, refreshToken };
   }
 
   async signup(authDto: AuthDto): Promise<UserTokens> {
@@ -53,21 +58,31 @@ export class AuthService {
     const { accessToken, refreshToken } =
       await this.generateTokens(tokensPayload);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userData } = user;
+    const userDto = this.extractUserDto(user);
 
-    return { user: userData, accessToken, refreshToken };
+    return { userDto, accessToken, refreshToken };
+  }
+
+  async refresh(user: User): Promise<UserTokens> {
+    const tokensPayload: JwtPayload = { sub: user.id, email: user.email };
+
+    const { accessToken, refreshToken } =
+      await this.generateTokens(tokensPayload);
+
+    const userDto = this.extractUserDto(user);
+
+    return { userDto, accessToken, refreshToken };
   }
 
   private async generateTokens(payload: JwtPayload) {
     const accessTokenPromise = this.jwtService.signAsync(payload, {
       secret: process.env.ACCESS_TOKEN_SECRET,
-      expiresIn: 30,
+      expiresIn: ACCESS_TOKEN_EXPIRATION_SEC,
     });
 
     const refreshTokenPromise = this.jwtService.signAsync(payload, {
       secret: process.env.REFRESH_TOKEN_SECRET,
-      expiresIn: 60,
+      expiresIn: REFRESH_TOKEN_EXPIRATION_SEC,
     });
 
     const [accessToken, refreshToken] = await Promise.all([
@@ -76,5 +91,12 @@ export class AuthService {
     ]);
 
     return { accessToken, refreshToken };
+  }
+
+  private extractUserDto(user: User): UserDto {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _, ...userDto } = user;
+
+    return userDto;
   }
 }
