@@ -6,6 +6,7 @@ import {
   Post,
   Req,
   Res,
+  UseGuards,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { AuthDto } from "./dto";
@@ -14,6 +15,8 @@ import { Request, Response } from "express";
 import { TOKENS } from "src/enums/tokens.enum";
 import { User } from "@prisma/client";
 import { REFRESH_TOKEN_EXPIRATION_MS } from "src/constants";
+import { RefreshTokenGuard } from "./guards";
+import { AccessTokenGuard } from "./guards";
 
 @Controller("auth")
 export class AuthController {
@@ -53,13 +56,14 @@ export class AuthController {
     return { user: userDto, accessToken };
   }
 
+  @UseGuards(AccessTokenGuard)
   @Post("logout")
   @HttpCode(HttpStatus.OK)
   async logout(@Res({ passthrough: true }) response: Response) {
     response.clearCookie(TOKENS.REFRESH_TOKEN);
   }
 
-  // here will be refresh guard
+  @UseGuards(RefreshTokenGuard)
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
   async refresh(
