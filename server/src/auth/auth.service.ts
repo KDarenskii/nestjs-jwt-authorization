@@ -13,7 +13,6 @@ import {
   ACCESS_TOKEN_EXPIRATION_SEC,
   REFRESH_TOKEN_EXPIRATION_SEC,
 } from "src/constants";
-import { UserDto } from "src/common";
 
 @Injectable()
 export class AuthService {
@@ -45,7 +44,7 @@ export class AuthService {
     const { accessToken, refreshToken } =
       await this.generateTokens(tokensPayload);
 
-    const userDto = this.extractUserDto(user);
+    const userDto = this.usersService.extractUserDto(user);
 
     return { userDto, accessToken, refreshToken };
   }
@@ -58,7 +57,7 @@ export class AuthService {
     const { accessToken, refreshToken } =
       await this.generateTokens(tokensPayload);
 
-    const userDto = this.extractUserDto(user);
+    const userDto = this.usersService.extractUserDto(user);
 
     return { userDto, accessToken, refreshToken };
   }
@@ -69,7 +68,7 @@ export class AuthService {
     const { accessToken, refreshToken } =
       await this.generateTokens(tokensPayload);
 
-    const userDto = this.extractUserDto(user);
+    const userDto = this.usersService.extractUserDto(user);
 
     return { userDto, accessToken, refreshToken };
   }
@@ -91,12 +90,5 @@ export class AuthService {
     ]);
 
     return { accessToken, refreshToken };
-  }
-
-  private extractUserDto(user: User): UserDto {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...userDto } = user;
-
-    return userDto;
   }
 }
