@@ -6,25 +6,27 @@ import {
 import { AuthDto } from "./dto";
 import { UsersService } from "src/users/users.service";
 import { JwtService } from "@nestjs/jwt";
-import { JwtPayload, UserTokens } from "./types";
+import { JwtPayload, UserDtoWithTokensAndRoles } from "./types";
 import * as bcrypt from "bcrypt";
-import { User } from "@prisma/client";
 import {
   ACCESS_TOKEN_EXPIRATION_SEC,
   REFRESH_TOKEN_EXPIRATION_SEC,
 } from "src/constants";
+import { UserWithRoles } from "src/common/types/UserWithRoles.types";
+import { RolesService } from "src/roles/roles.service";
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly rolesService: RolesService,
   ) {}
 
   async login(authDto: AuthDto) {
     const { email, password: incomingPassword } = authDto;
 
-    const user = await this.usersService.getByEmail(email);
+    const user = await this.usersService.get({ where: { email } });
 
     if (!user) {
       throw new NotFoundException("Email is not existing");
@@ -39,18 +41,30 @@ export class AuthService {
       throw new BadRequestException("Incorrect password");
     }
 
+    const roles = await this.rolesService.get({
+      where: { users: { some: { id: user.id } } },
+    });
+
     const tokensPayload: JwtPayload = { sub: user.id, email: user.email };
 
     const { accessToken, refreshToken } =
       await this.generateTokens(tokensPayload);
 
     const userDto = this.usersService.extractUserDto(user);
+    const transformedRoles = roles.map((role) => role.name);
 
-    return { userDto, accessToken, refreshToken };
+    return {
+      userDto: { ...userDto, roles: transformedRoles },
+      accessToken,
+      refreshToken,
+    };
   }
 
-  async signup(authDto: AuthDto): Promise<UserTokens> {
+  async signup(authDto: AuthDto): Promise<UserDtoWithTokensAndRoles> {
     const user = await this.usersService.create(authDto);
+    const roles = await this.rolesService.get({
+      where: { users: { some: { id: user.id } } },
+    });
 
     const tokensPayload: JwtPayload = { sub: user.id, email: user.email };
 
@@ -58,19 +72,31 @@ export class AuthService {
       await this.generateTokens(tokensPayload);
 
     const userDto = this.usersService.extractUserDto(user);
+    const transformedRoles = roles.map((role) => role.name);
 
-    return { userDto, accessToken, refreshToken };
+    return {
+      userDto: { ...userDto, roles: transformedRoles },
+      accessToken,
+      refreshToken,
+    };
   }
 
-  async refresh(user: User): Promise<UserTokens> {
-    const tokensPayload: JwtPayload = { sub: user.id, email: user.email };
+  async refresh(user: UserWithRoles): Promise<UserDtoWithTokensAndRoles> {
+    const { email, id, password, roles } = user;
+
+    const tokensPayload: JwtPayload = { sub: id, email: email };
 
     const { accessToken, refreshToken } =
       await this.generateTokens(tokensPayload);
 
-    const userDto = this.usersService.extractUserDto(user);
+    const userDto = this.usersService.extractUserDto({ email, id, password });
+    const transformedRoles = roles.map((role) => role.name);
 
-    return { userDto, accessToken, refreshToken };
+    return {
+      userDto: { ...userDto, roles: transformedRoles },
+      accessToken,
+      refreshToken,
+    };
   }
 
   private async generateTokens(payload: JwtPayload) {

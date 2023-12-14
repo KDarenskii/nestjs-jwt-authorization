@@ -13,10 +13,10 @@ import { AuthDto } from "./dto";
 import { AuthResponse } from "./types";
 import { Request, Response } from "express";
 import { TOKENS } from "src/enums/tokens.enum";
-import { User } from "@prisma/client";
 import { REFRESH_TOKEN_EXPIRATION_MS } from "src/constants";
 import { RefreshTokenGuard } from "./guards";
 import { Public } from "./decorators";
+import { UserWithRoles } from "src/common/types/UserWithRoles.types";
 
 @Controller("auth")
 export class AuthController {
@@ -75,7 +75,7 @@ export class AuthController {
     const user = request.user;
 
     const { accessToken, refreshToken, userDto } =
-      await this.authService.refresh(user as User);
+      await this.authService.refresh(user as UserWithRoles);
 
     response.cookie(TOKENS.REFRESH_TOKEN, refreshToken, {
       httpOnly: true,
