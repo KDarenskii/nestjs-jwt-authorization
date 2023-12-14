@@ -5,8 +5,8 @@ export interface AuthResponse {
   user: UserDto;
 }
 
-export interface UserTokens {
-  userDto: UserDto;
+export interface UserDtoWithTokensAndRoles {
+  userDto: UserDto & { roles: string[] };
   accessToken: string;
   refreshToken: string;
 }
