@@ -4,14 +4,14 @@ import { Request } from "express";
 import { Strategy } from "passport-jwt";
 import { TOKENS } from "src/enums/tokens.enum";
 import { JwtPayload } from "../types";
-import { UsersService } from "src/users/users.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(
   Strategy,
   "jwt-refresh-token",
 ) {
-  constructor(private readonly usersService: UsersService) {
+  constructor(private readonly prismaService: PrismaService) {
     super({
       jwtFromRequest: cookieExtractor,
       secretOrKey: process.env.REFRESH_TOKEN_SECRET,
@@ -20,9 +20,10 @@ export class RefreshTokenStrategy extends PassportStrategy(
   }
 
   async validate(payload: JwtPayload) {
-    const user = this.usersService.getByEmail(payload.email);
-
-    return user;
+    return this.prismaService.user.findUnique({
+      where: { id: payload.sub },
+      include: { roles: true },
+    });
   }
 }
 
