@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { CreateUserDto } from "./dto/create-user.dto";
-import { User } from "@prisma/client";
+import { Prisma, User } from "@prisma/client";
 import { PrismaService } from "src/prisma/prisma.service";
 import * as bcrypt from "bcrypt";
 import { UserDto } from "src/common";
+import { ROLE } from "src/enums";
 
 @Injectable()
 export class UsersService {
@@ -15,14 +16,17 @@ export class UsersService {
     });
   }
 
-  async getByEmail(email: string): Promise<User | null> {
-    return this.prismaService.user.findUnique({ where: { email } });
+  async get(params: {
+    where: Prisma.UserWhereUniqueInput;
+    include?: Prisma.UserInclude;
+  }) {
+    return this.prismaService.user.findUnique(params);
   }
 
   async create(createUserDto: CreateUserDto): Promise<User | null> {
     const { email, password } = createUserDto;
 
-    const user = await this.getByEmail(createUserDto.email);
+    const user = await this.get({ where: { email } });
 
     if (user) {
       throw new BadRequestException("Email is already existing");
@@ -31,7 +35,11 @@ export class UsersService {
     const hashedPassword = await bcrypt.hash(password, 6);
 
     return this.prismaService.user.create({
-      data: { email, password: hashedPassword },
+      data: {
+        email,
+        password: hashedPassword,
+        roles: { connect: { name: ROLE.USER } },
+      },
     });
   }
 
