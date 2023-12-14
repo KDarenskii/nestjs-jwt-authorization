@@ -16,12 +16,13 @@ import { TOKENS } from "src/enums/tokens.enum";
 import { User } from "@prisma/client";
 import { REFRESH_TOKEN_EXPIRATION_MS } from "src/constants";
 import { RefreshTokenGuard } from "./guards";
-import { AccessTokenGuard } from "./guards";
+import { Public } from "./decorators";
 
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post("login")
   @HttpCode(HttpStatus.OK)
   async login(
@@ -39,6 +40,7 @@ export class AuthController {
     return { user: userDto, accessToken };
   }
 
+  @Public()
   @Post("signup")
   @HttpCode(HttpStatus.OK)
   async signup(
@@ -56,13 +58,13 @@ export class AuthController {
     return { user: userDto, accessToken };
   }
 
-  @UseGuards(AccessTokenGuard)
   @Post("logout")
   @HttpCode(HttpStatus.OK)
   async logout(@Res({ passthrough: true }) response: Response) {
     response.clearCookie(TOKENS.REFRESH_TOKEN);
   }
 
+  @Public()
   @UseGuards(RefreshTokenGuard)
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
