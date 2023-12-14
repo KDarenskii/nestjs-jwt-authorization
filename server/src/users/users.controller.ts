@@ -1,12 +1,17 @@
-import { Controller, Post, Body, Get } from "@nestjs/common";
+import { Controller, Post, Body, Get, UseGuards } from "@nestjs/common";
 import { UsersService } from "./users.service";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { User } from "@prisma/client";
+import { Roles } from "src/auth/decorators";
+import { ROLE } from "src/enums";
+import { RolesGuard } from "src/auth/guards/roles.guard";
 
 @Controller("users")
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Roles(ROLE.ADMIN)
+  @UseGuards(RolesGuard)
   @Get()
   async get() {
     return this.usersService.getAll();
