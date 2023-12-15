@@ -14,7 +14,7 @@ import { Request, Response } from "express";
 import { TOKENS } from "src/enums/tokens.enum";
 import { REFRESH_TOKEN_EXPIRATION_MS } from "src/constants";
 import { RefreshTokenGuard } from "./guards";
-import { Public } from "./decorators";
+import { Public } from "../common/decorators";
 import { UserDtoWithRolesAndAccessToken } from "./types";
 import { UserWithRoles } from "src/common/types";
 

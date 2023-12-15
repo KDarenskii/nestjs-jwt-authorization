@@ -2,7 +2,7 @@ import { Controller, Post, Body, Get, UseGuards } from "@nestjs/common";
 import { UsersService } from "./users.service";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { User } from "@prisma/client";
-import { Roles } from "src/auth/decorators";
+import { Roles } from "src/common/decorators";
 import { ROLE } from "src/enums";
 import { RolesGuard } from "src/common/guards/roles.guard";
 
