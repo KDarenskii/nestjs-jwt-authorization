@@ -1,12 +1,12 @@
-import { UserDto } from "src/common/dto/user.dto";
+import { UserDtoWithRoles } from "src/common/types";
 
-export interface AuthResponse {
+export interface UserDtoWithRolesAndAccessToken {
+  user: UserDtoWithRoles<string[]>;
   accessToken: string;
-  user: UserDto;
 }
 
-export interface UserDtoWithTokensAndRoles {
-  userDto: UserDto & { roles: string[] };
+export interface UserDtoWithRolesAndTokens {
+  user: UserDtoWithRoles<string[]>;
   accessToken: string;
   refreshToken: string;
 }
