@@ -6,14 +6,14 @@ import {
 import { AuthDto } from "./dto";
 import { UsersService } from "src/users/users.service";
 import { JwtService } from "@nestjs/jwt";
-import { JwtPayload, UserDtoWithTokensAndRoles } from "./types";
+import { JwtPayload, UserDtoWithRolesAndTokens } from "./types";
 import * as bcrypt from "bcrypt";
 import {
   ACCESS_TOKEN_EXPIRATION_SEC,
   REFRESH_TOKEN_EXPIRATION_SEC,
 } from "src/constants";
-import { UserWithRoles } from "src/common/types/UserWithRoles.types";
 import { RolesService } from "src/roles/roles.service";
+import { UserWithRoles } from "src/common/types";
 
 @Injectable()
 export class AuthService {
@@ -60,7 +60,7 @@ export class AuthService {
     };
   }
 
-  async signup(authDto: AuthDto): Promise<UserDtoWithTokensAndRoles> {
+  async signup(authDto: AuthDto): Promise<UserDtoWithRolesAndTokens> {
     const user = await this.usersService.create(authDto);
     const roles = await this.rolesService.get({
       where: { users: { some: { id: user.id } } },
@@ -75,13 +75,13 @@ export class AuthService {
     const transformedRoles = roles.map((role) => role.name);
 
     return {
-      userDto: { ...userDto, roles: transformedRoles },
+      user: { ...userDto, roles: transformedRoles },
       accessToken,
       refreshToken,
     };
   }
 
-  async refresh(user: UserWithRoles): Promise<UserDtoWithTokensAndRoles> {
+  async refresh(user: UserWithRoles): Promise<UserDtoWithRolesAndTokens> {
     const { email, id, password, roles } = user;
 
     const tokensPayload: JwtPayload = { sub: id, email: email };
@@ -93,7 +93,7 @@ export class AuthService {
     const transformedRoles = roles.map((role) => role.name);
 
     return {
-      userDto: { ...userDto, roles: transformedRoles },
+      user: { ...userDto, roles: transformedRoles },
       accessToken,
       refreshToken,
     };

@@ -10,13 +10,13 @@ import {
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { AuthDto } from "./dto";
-import { AuthResponse } from "./types";
 import { Request, Response } from "express";
 import { TOKENS } from "src/enums/tokens.enum";
 import { REFRESH_TOKEN_EXPIRATION_MS } from "src/constants";
 import { RefreshTokenGuard } from "./guards";
 import { Public } from "./decorators";
-import { UserWithRoles } from "src/common/types/UserWithRoles.types";
+import { UserDtoWithRolesAndAccessToken } from "./types";
+import { UserWithRoles } from "src/common/types";
 
 @Controller("auth")
 export class AuthController {
@@ -46,8 +46,8 @@ export class AuthController {
   async signup(
     @Body() authDto: AuthDto,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<AuthResponse> {
-    const { accessToken, refreshToken, userDto } =
+  ): Promise<UserDtoWithRolesAndAccessToken> {
+    const { accessToken, refreshToken, user } =
       await this.authService.signup(authDto);
 
     response.cookie(TOKENS.REFRESH_TOKEN, refreshToken, {
@@ -55,7 +55,7 @@ export class AuthController {
       maxAge: REFRESH_TOKEN_EXPIRATION_MS,
     });
 
-    return { user: userDto, accessToken };
+    return { user, accessToken };
   }
 
   @Post("logout")
@@ -72,16 +72,17 @@ export class AuthController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const user = request.user;
+    const userFromRequest = request.user;
 
-    const { accessToken, refreshToken, userDto } =
-      await this.authService.refresh(user as UserWithRoles);
+    const { accessToken, refreshToken, user } = await this.authService.refresh(
+      userFromRequest as UserWithRoles,
+    );
 
     response.cookie(TOKENS.REFRESH_TOKEN, refreshToken, {
       httpOnly: true,
       maxAge: REFRESH_TOKEN_EXPIRATION_MS,
     });
 
-    return { user: userDto, accessToken };
+    return { user, accessToken };
   }
 }
