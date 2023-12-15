@@ -3,8 +3,8 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { Prisma, User } from "@prisma/client";
 import { PrismaService } from "src/prisma/prisma.service";
 import * as bcrypt from "bcrypt";
-import { UserDto } from "src/common";
 import { ROLE } from "src/enums";
+import { UserDto, UserWithRoles } from "src/common/types";
 
 @Injectable()
 export class UsersService {
@@ -16,11 +16,18 @@ export class UsersService {
     });
   }
 
-  async get(params: {
-    where: Prisma.UserWhereUniqueInput;
-    include?: Prisma.UserInclude;
-  }) {
+  async get(params: { where: Prisma.UserWhereUniqueInput }) {
     return this.prismaService.user.findUnique(params);
+  }
+
+  async getWithRoles(params: {
+    where: Prisma.UserWhereUniqueInput;
+  }): Promise<UserWithRoles> {
+    const { where } = params;
+    return this.prismaService.user.findUnique({
+      where,
+      include: { roles: true },
+    });
   }
 
   async create(createUserDto: CreateUserDto): Promise<User | null> {
